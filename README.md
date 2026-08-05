@@ -30,6 +30,7 @@ Experiments for the fullsend platform — each tests a hypothesis about autonomo
 | 0022 | [Claude GitHub App auth](0022-claude-github-app-auth/) | Concluded |
 | 0023 | [Review cache publication policy](0023-review-cache/) | Concluded |
 | 0024 | [CODEOWNERS + GitHub App approval matrix](0024-codeowners-app-matrix/) | Concluded |
+| 0025 | [Subagent process isolation via PreToolUse hooks](0025-subagent-process-isolation/) | Active |
 
 ## Conventions
 

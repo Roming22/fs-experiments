@@ -1,0 +1,11 @@
+# Example fixture input for the explore agent.
+# Points to a real (public) GitHub issue as the test case.
+issue_source: github
+issue_key: "1"
+repo_full_name: "<your-org>/<your-repo>"
+description: |
+  A mid-complexity story requiring the agent to explore a real codebase,
+  identify testing frameworks, and gather context about regression test
+  approaches. Tests the agent's ability to use multiple sources (GitHub,
+  web search, documentation) and produce structured output.
+  Replace repo_full_name and issue_key with a real issue from your target repo.

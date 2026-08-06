@@ -1,12 +1,12 @@
 ---
-title: "24. Statistical significance for non-deterministic evals"
+title: "26. Statistical significance for non-deterministic evals"
 status: Concluded
 topics:
   - evaluation
   - testing
 ---
 
-# 24. Statistical significance for non-deterministic evals
+# 26. Statistical significance for non-deterministic evals
 
 **Relates to:** [fullsend-ai/fullsend#2460](https://github.com/fullsend-ai/fullsend/issues/2460) · `testing-agents.md` open question #1 · `0016-promptfoo-eval` · `0006-code-agent-evaluation`
 
@@ -81,7 +81,7 @@ Neither ships a reusable utility, and neither answers the underlying question:
 ## How to run
 
 ```bash
-cd 0024-eval-statistical-significance
+cd 0026-eval-statistical-significance
 python -m unittest -v                                   # 24 tests, no install
 python threshold_check.py fixtures/promptfoo_sample.json --target 0.90  # -> FAIL, exit 1
 python threshold_check.py fixtures/promptfoo_sample.json --target 0.70  # -> PASS, exit 0

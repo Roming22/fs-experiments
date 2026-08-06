@@ -1,0 +1,2 @@
+agents:
+  - source: harness/judge-parent.yaml

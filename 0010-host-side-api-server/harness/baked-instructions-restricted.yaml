@@ -1,6 +1,7 @@
 agent: agents/test-agent.md
+role: experiment
 model: opus
-policy: policies/rendered-restricted.yaml
+policy: policies/restricted.yaml
 
 providers:
   - api-server

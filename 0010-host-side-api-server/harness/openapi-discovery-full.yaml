@@ -1,6 +1,7 @@
 agent: agents/test-agent.md
+role: experiment
 model: opus
-policy: policies/rendered-full-access.yaml
+policy: policies/full-access.yaml
 
 providers:
   - api-server

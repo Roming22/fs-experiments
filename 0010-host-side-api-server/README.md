@@ -40,6 +40,28 @@ See [HOW_TO.md](HOW_TO.md).
 - **Repo provisioner depends on OpenShell#1272**: if content inspection hooks
   ship in OpenShell, the scan-before-copy flow could be handled natively
 
+## Changelog
+
+### 2026-07-16: Remove `allowed_ips` requirement
+
+OpenShell maintainer [johntmyers confirmed](https://github.com/NVIDIA/OpenShell/issues/1633#issuecomment-1)
+that PR [NVIDIA/OpenShell#1560](https://github.com/NVIDIA/OpenShell/pull/1560) removed
+the `allowed_ips` requirement when endpoints are explicitly declared with host+port in
+the policy. Validated locally on OpenShell v0.0.83 (rootless Podman + pasta, Fedora 44):
+
+- Both builder (`:9090`) and provisioner (`:9091`) reachable from sandbox without `allowed_ips`
+- Undeclared endpoints still blocked by the proxy
+
+Changes:
+- Removed `allowed_ips: ["{{HOST_IP}}/32"]` from both policies
+- Removed HOST_IP resolution and policy template rendering from `run.sh`
+- Harness files now reference raw policies directly (no rendered copies)
+- Added `role: experiment` to all harness files (required by current fullsend)
+
+Servers still bind to `0.0.0.0` — the remaining motivation for
+[NVIDIA/OpenShell#1633](https://github.com/NVIDIA/OpenShell/issues/1633) (`host.local`
+supervisor-proxied endpoints) is eliminating `0.0.0.0` binding in favor of `127.0.0.1`.
+
 ## Findings
 
 See [results/findings.md](results/findings.md) (populated after running).

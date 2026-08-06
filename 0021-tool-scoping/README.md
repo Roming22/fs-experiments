@@ -17,17 +17,25 @@ with `claude --agent`.
 
 | Mechanism | Parameterized? | `--agent` session | Subagent |
 |-----------|---------------|-------------------|----------|
-| `tools` in frontmatter | No | **No effect** | Restricts to listed tools |
-| `disallowedTools` in frontmatter | No | **No effect** | Removes listed tools |
+| `tools` in frontmatter | No | ~~**No effect**~~ see note | Restricts to listed tools |
+| `disallowedTools` in frontmatter | No | ~~**No effect**~~ see note | Removes listed tools |
 | `permissions.allow` in settings.json | **Yes** | **Enforced** (with `dontAsk`) | — |
 | `permissions.deny` in settings.json | **Yes** | **Enforced** (even with `--dangerously-skip-permissions`) | — |
 | `bypassPermissions` mode | N/A | **Partial** — auto-approves some tools, denies others | — |
 
+> **Note (2026-07):** This experiment ran on v2.1.118. Claude Code
+> v2.1.119, released 21 hours later, changed enforcement: `tools` and
+> `disallowedTools` are now applied in `--agent`/`--print` sessions.
+> However, multiple bugs make them unreliable — scoped patterns like
+> `Bash(sed *)` strip the entire tool, and subagents don't inherit
+> restrictions. See RCA (Root Cause Analysis)
+> [#5182](https://github.com/fullsend-ai/fullsend/discussions/5182).
+
 ## 1. Frontmatter scoping (`tools`, `disallowedTools`)
 
-`tools` and `disallowedTools` in agent frontmatter **have no effect in
-`--agent` sessions**. They only work when the agent runs as a subagent
-spawned via the Agent tool.
+`tools` and `disallowedTools` in agent frontmatter ~~**have no effect in
+`--agent` sessions**~~ see note. They only work when the agent runs as
+a subagent spawned via the Agent tool.
 
 ### `--agent` sessions: `tools` neither restricts nor grants
 
@@ -121,3 +129,9 @@ See [HOW_TO.md](HOW_TO.md).
 - **Claude CLI version:** 2.1.118
 - **Date:** 2026-04-23
 - **OS:** Linux 6.19.11-200.fc43.x86_64 (Fedora 43)
+
+> **Note (2026-07):** v2.1.119 was released on 2026-04-23 23:24 UTC —
+> 21 hours after this experiment concluded. That release changed `tools`
+> and `disallowedTools` enforcement in `--agent`/`--print` sessions.
+> Results in section 1 are accurate for v2.1.118 but no longer reflect
+> current behavior.

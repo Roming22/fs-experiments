@@ -75,10 +75,13 @@ inside the sandbox and must be used in:
 - **Env files** delivered into the sandbox (`BUILDER_URL`, `PROVISIONER_URL`)
 - **Network policy endpoints** (`host: host.openshell.internal`)
 
-The host IP is still needed for `allowed_ips` in network policies (SSRF
+~~The host IP is still needed for `allowed_ips` in network policies (SSRF
 allowlisting requires a CIDR, not a hostname). The orchestrator resolves this
 at runtime via `getent hosts host.openshell.internal` and renders it into
-policy templates with `sed "s/{{HOST_IP}}/$HOST_IP/g"`.
+policy templates with `sed "s/{{HOST_IP}}/$HOST_IP/g"`.~~
+
+**Update (2026-07-16):** `allowed_ips` is no longer required. See
+[below](#2026-07-16-allowed_ips-no-longer-required-for-declared-endpoints).
 
 ### Server process contract
 
@@ -165,21 +168,21 @@ network_policies:
               method: POST
               path: /build
           # ...additional allowed paths
-        allowed_ips:
-          - "{{HOST_IP}}/32"
     binaries:
       - path: "**/curl"
 ```
 
 Key elements:
 - **`protocol: rest`**: Enables HTTP method + path matching at L7
-- **`allowed_ips`**: Overrides SSRF protection for the host bridge IP (rendered
-  from template at orchestrator startup)
 - **`binaries`**: Restricts which executables can reach the endpoint (`**/curl`
   ensures only curl can call the API, not arbitrary processes)
 - **Restricted policies** omit discovery endpoints (`/openapi.json`,
   `/tools.json`) and non-essential operations (`/push`, `/images`) to test
   agent behavior under reduced API surface
+
+> **Note:** The original experiment included `allowed_ips: ["{{HOST_IP}}/32"]`
+> in endpoint declarations. This is no longer needed — see
+> [update below](#2026-07-16-allowed_ips-no-longer-required-for-declared-endpoints).
 
 ### Orchestrator lifecycle
 
@@ -190,14 +193,16 @@ The wrapper script (`run.sh`) manages the full lifecycle:
 3. **Generate bearer token** (UUID) and export as `API_TOKEN`
 4. **Start API servers** (builder on :9090, provisioner on :9091) with `--token`
 5. **Health-check** both servers (poll `/healthz` up to 15s, verify PIDs alive)
-6. **Resolve host IP** via `getent hosts host.openshell.internal`
-7. **Render policy templates** — substitute `{{HOST_IP}}` into both policy files
-8. **Generate env file** with `BUILDER_URL` and `PROVISIONER_URL` using
+6. **Generate env file** with `BUILDER_URL` and `PROVISIONER_URL` using
    `host.openshell.internal` hostname
-9. **Run `fullsend run`** with `--fullsend-dir .` (experiment directory is the
+7. **Run `fullsend run`** with `--fullsend-dir .` (experiment directory is the
    fullsend directory)
-10. **Cleanup on exit** (trap): kill server PIDs, delete provider, remove
-    rendered policies and temp env file
+8. **Cleanup on exit** (trap): kill server PIDs, delete provider, remove
+    temp env file
+
+> **Note:** The original lifecycle included HOST_IP resolution (step 6) and
+> policy template rendering (step 7) for `allowed_ips`. These steps were
+> removed in the 2026-07-16 update.
 
 The harness files deliver the env file into the sandbox via `host_files`:
 ```yaml
@@ -375,5 +380,34 @@ This has been filed as
 
 All URLs delivered into the sandbox must use `host.openshell.internal`, never
 raw IPs. The L7 proxy matches requests by hostname, and SSRF protection blocks
-private IP addresses. The `allowed_ips` field in network policies handles the
-SSRF allowlisting separately using the rendered host IP.
+private IP addresses.
+
+### 2026-07-16: `allowed_ips` no longer required for declared endpoints
+
+OpenShell maintainer johntmyers
+[confirmed](https://github.com/NVIDIA/OpenShell/issues/1633#issuecomment-1)
+that [PR #1560](https://github.com/NVIDIA/OpenShell/pull/1560) removed the
+`allowed_ips` requirement when endpoints are explicitly declared with host+port
+in the policy.
+
+**Validation (OpenShell v0.0.83, rootless Podman + pasta, Fedora 44 kernel 7.0.9):**
+
+| Endpoint | Port | Policy has `allowed_ips`? | Result from sandbox |
+|----------|------|--------------------------|---------------------|
+| builder `/tools.json` | 9090 | No | 200 OK |
+| provisioner `/tools.json` | 9091 | No | 200 OK |
+| `example.com` (not in policy) | 80 | N/A | Blocked |
+
+**What changed:**
+- Removed `allowed_ips: ["{{HOST_IP}}/32"]` from both policies
+- Removed HOST_IP resolution and policy template rendering from `run.sh`
+- Harness files now reference raw policy files directly (no rendered copies)
+
+**Implications:**
+- The `{{HOST_IP}}` templating step was the most fragile part of the setup
+  (platform-dependent IP resolution, sed rendering, separate rendered files).
+  Its removal simplifies the orchestrator significantly.
+- Servers still bind to `0.0.0.0` — the remaining motivation for
+  [NVIDIA/OpenShell#1633](https://github.com/NVIDIA/OpenShell/issues/1633)
+  is eliminating `0.0.0.0` binding in favor of `127.0.0.1` via supervisor-proxied
+  `host.local` endpoints.

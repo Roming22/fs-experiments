@@ -1,0 +1,28 @@
+agent: agents/judge-parent.md
+role: experiment
+model: sonnet
+image: ghcr.io/fullsend-ai/fullsend-sandbox:latest
+policy: https://raw.githubusercontent.com/fullsend-ai/agents/3760b3bb70de32596c1922332fb96e76cd9ebcd8/policies/triage.yaml#sha256=896a5f89b8e58ea78e64641dc8f6261eb98383bb4bfec949f4b98755c957ef77
+
+allowed_remote_resources:
+  - "https://raw.githubusercontent.com/fullsend-ai/agents/"
+allow_runtime_fetch: true
+
+host_files:
+  - src: env/gcp-vertex.env
+    dest: /sandbox/workspace/.env.d/gcp-vertex.env
+    expand: true
+  - src: ${GOOGLE_APPLICATION_CREDENTIALS}
+    dest: /tmp/.gcp-credentials.json
+  - src: hooks/pretooluse.py
+    dest: /sandbox/workspace/.fullsend-hooks/pretooluse.py
+  - src: config/claude-hooks.json
+    dest: /sandbox/claude-config/settings.json
+
+validation_loop:
+  script: scripts/validate-output.sh
+  max_iterations: 1
+
+post_script: scripts/post-emit-cost.py
+
+timeout_minutes: 10

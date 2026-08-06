@@ -11,8 +11,8 @@ cd "$SCRIPT_DIR"
 usage() {
     echo "Usage: $0 <harness-name>"
     echo ""
-    echo "Starts the host-side API servers, renders policies, and runs"
-    echo "fullsend run with the specified harness."
+    echo "Starts the host-side API servers and runs fullsend with the"
+    echo "specified harness."
     echo ""
     echo "Available harnesses:"
     for f in harness/*.yaml; do
@@ -65,7 +65,6 @@ cleanup() {
     [[ -n "$PROVISIONER_PID" ]] && kill "$PROVISIONER_PID" 2>/dev/null && wait "$PROVISIONER_PID" 2>/dev/null && echo "Stopped provisioner (pid $PROVISIONER_PID)"
     openshell provider delete api-server 2>/dev/null && echo "Deleted provider api-server" || true
     rm -f "$ENV_FILE"
-    rm -f policies/rendered-full-access.yaml policies/rendered-restricted.yaml
     echo "Cleanup done."
 }
 trap cleanup EXIT
@@ -90,28 +89,6 @@ API_TOKEN="$(uuidgen)"
 
 echo "=== Host-Side API Server Experiment ==="
 echo "Harness: $HARNESS_NAME"
-
-# ---------------------------------------------------------------------------
-# Resolve host IP (needed before starting servers for bind address)
-# ---------------------------------------------------------------------------
-
-HOST_IP=""
-if out=$(getent hosts host.openshell.internal 2>/dev/null); then
-    HOST_IP=$(echo "$out" | awk '{print $1}')
-    echo "Host IP (via host.openshell.internal): $HOST_IP"
-fi
-
-if [[ -z "$HOST_IP" ]]; then
-    HOST_IP=$(podman network inspect podman 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['subnets'][0]['gateway'])" 2>/dev/null)
-    if [[ -n "$HOST_IP" ]]; then
-        echo "Host IP (via podman bridge gateway): $HOST_IP"
-    fi
-fi
-
-if [[ -z "$HOST_IP" ]]; then
-    echo "ERROR: Could not resolve host IP"
-    exit 1
-fi
 
 # ---------------------------------------------------------------------------
 # Start API servers (bound to all interfaces — rootless Podman can't bind to
@@ -158,14 +135,10 @@ for port in 9090 9091; do
 done
 
 # ---------------------------------------------------------------------------
-# Render policies
+# Policies (no rendering needed — allowed_ips removed per #1560)
 # ---------------------------------------------------------------------------
 
-echo "Rendering policies..."
-sed "s/{{HOST_IP}}/$HOST_IP/g" policies/full-access.yaml > policies/rendered-full-access.yaml
-sed "s/{{HOST_IP}}/$HOST_IP/g" policies/restricted.yaml > policies/rendered-restricted.yaml
-echo "  policies/rendered-full-access.yaml"
-echo "  policies/rendered-restricted.yaml"
+echo "Using policies directly (no HOST_IP templating needed)."
 
 # ---------------------------------------------------------------------------
 # Generate env file (server URLs only — token is handled by provider)

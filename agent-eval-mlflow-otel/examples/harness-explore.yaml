@@ -1,0 +1,49 @@
+# Example harness configuration for the explore agent.
+# The eval section is the single source of truth for quality gates.
+# harness.py reads this at runtime and resolves scorer names to Python functions.
+
+agent: customized/agents/explore.md
+model: opus
+image: ghcr.io/fullsend-ai/fullsend-sandbox:latest
+policy: customized/policies/explore.yaml
+
+skills:
+  - customized/skills/public-research
+  - customized/skills/jira-read
+
+pre_script: customized/scripts/pre-explore.sh
+
+validation_loop:
+  script: scripts/validate-output-schema.sh
+  max_iterations: 2
+
+post_script: customized/scripts/post-explore.sh
+
+timeout_minutes: 20
+
+eval:
+  scorers:
+    mechanical:
+      - validation_passed
+      - tool_efficiency
+      - cost_within_budget
+      - confidence_coherence
+      - iteration_count
+    llm_judge:
+      model: claude-opus-4-6
+      criteria:
+        - name: explore_context_quality
+          guidelines: >
+            Is the gathered context relevant, specific, and complete?
+            Did the agent look in the right places? Is context specific
+            enough for refinement? Were constraints/risks identified?
+        - name: reasoning_coherence
+          guidelines: >
+            Is reasoning logically coherent and evidence-based?
+  gates:
+    min_validation_rate: 0.80
+    # 0–1 scale (matches LLM judge Feedback values = raw 1–5 / 5.0).
+    # 0.6 ≈ "3/5" on the rubric — use the same scale as scorer output.
+    min_quality_score: 0.6
+    max_cost: 2.00
+  baseline: evals/baselines/explore-golden.jsonl

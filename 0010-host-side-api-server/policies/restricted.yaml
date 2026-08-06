@@ -34,8 +34,6 @@ network_policies:
           - allow:
               method: POST
               path: /build
-        allowed_ips:
-          - "{{HOST_IP}}/32"
     binaries:
       - path: "**/curl"
   provisioner:
@@ -52,7 +50,5 @@ network_policies:
           - allow:
               method: GET
               path: /repo/status/*
-        allowed_ips:
-          - "{{HOST_IP}}/32"
     binaries:
       - path: "**/curl"

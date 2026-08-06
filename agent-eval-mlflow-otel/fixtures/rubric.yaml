@@ -1,0 +1,79 @@
+# Example fixture rubric — LLM judge instructions for scoring an explore trace.
+#
+# The judge_prompt is sent to Claude Opus with {{ trace_summary }} replaced
+# by the actual trace data. The judge returns a 1-5 score.
+#
+# Deterministic checks verify specific assessment fields that mechanical
+# scorers have already logged to MLflow.
+
+name: explore-regression-test-suite
+agent: explore
+max_cost_usd: 5.0
+max_turns: 120
+
+judge_prompt: |
+  You are evaluating an explore agent's work on a GitHub issue about
+  building a regression test suite.
+
+  The agent was given this issue and asked to explore all available context
+  (GitHub, web, Jira, and optionally the target codebase) to gather a rich
+  picture for a downstream refinement agent. The agent produces a structured
+  JSON exploration result.
+
+  NOTE: The target codebase may be empty or inaccessible. In that case, the
+  agent should still gather context from GitHub issues, PRs, web research,
+  and any available documentation. An empty target repo is NOT a failure —
+  it means the agent must rely on other sources.
+
+  Here is the agent's trace summary and output:
+  {{ trace_summary }}
+
+  Evaluate the quality on a 1-5 scale based on these criteria:
+
+  1. **Research breadth** — Did the agent use multiple sources (GitHub
+     issues, web search, documentation) to understand the problem domain?
+
+  2. **Related work** — Did the agent find related issues, PRs, or
+     discussions? Did it identify prior art or existing patterns?
+
+  3. **Technical landscape** — Did the agent identify relevant
+     technologies, frameworks, deployment targets, and key dependencies?
+
+  4. **Architectural constraints** — Did the agent surface meaningful
+     constraints that would affect implementation?
+
+  5. **Output quality** — Is the output well-structured, with a clear
+     summary and confidence scores? Are findings specific and actionable?
+
+  Scoring:
+    1 = Failed to produce output or produced empty/invalid JSON
+    2 = Minimal exploration with very few sources consulted
+    3 = Adequate — consulted multiple sources, produced valid output
+    4 = Good — thorough research, specific findings, clear constraints
+    5 = Excellent — comprehensive exploration with deep, actionable findings
+
+  Respond with just a number 1-5.
+
+deterministic_checks:
+  - name: valid_json_output
+    description: Agent produced valid JSON in agent-result.json
+    field: validation_passed
+    expect: 1.0
+
+  - name: has_tool_calls
+    description: Agent made tool calls (actually explored)
+    field: tool_efficiency
+    min_value: 0.1
+
+  - name: within_budget
+    description: Agent stayed within cost budget
+    field: cost_within_budget
+    expect: 1.0
+
+thresholds:
+  judge_score:
+    min: 3.0
+  valid_json_output:
+    min_pass_rate: 1.0
+  within_budget:
+    min_pass_rate: 1.0

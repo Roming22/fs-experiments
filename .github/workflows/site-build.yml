@@ -17,28 +17,31 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout experiments
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           path: experiments
 
       - name: Checkout fullsend (doc site source)
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: fullsend-ai/fullsend
           path: fullsend
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: fullsend/website/package-lock.json
+          cache-dependency-path: fullsend/package-lock.json
 
       - name: Install and build doc site
-        working-directory: fullsend/website
+        working-directory: fullsend
         run: |
           npm ci --ignore-scripts
-          rm -rf ../experiments
-          ln -s "$GITHUB_WORKSPACE/experiments" ../experiments
-          ln -sfn "$GITHUB_WORKSPACE/experiments" ../docs/experiments
-          npx vitepress build
+          # Replace the fullsend submodule symlink with our checkout so
+          # VitePress builds the combined site with experiments content
+          rm -rf docs/experiments
+          ln -s "$GITHUB_WORKSPACE/experiments" docs/experiments
+          # Use vitepress directly -- npm run docs:build runs git submodule update
+          # which would overwrite our symlink and fail without SSH keys
+          npx vitepress build docs

@@ -32,6 +32,7 @@ Experiments for the fullsend platform — each tests a hypothesis about autonomo
 | 0024 | [CODEOWNERS + GitHub App approval matrix](0024-codeowners-app-matrix/) | Concluded |
 | 0025 | [Subagent process isolation via PreToolUse hooks](0025-subagent-process-isolation/) | Active |
 | 0026 | [Statistical significance for non-deterministic evals](0026-eval-statistical-significance/) | Concluded |
+| 0027 | [Software Development Life Cycle](0027-sdlc/) | Concluded |
 
 ## Conventions
 
